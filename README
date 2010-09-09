@@ -1,0 +1,68 @@
+esjit is a simple console-based utility to handle jack-audio-connection-kit
+connections.
+
+- written in C++, for Linux-like systems only
+- aimed for people who find
+	(A) QJackQtl too heavy (heck, you don't even need X to record sound!)
+	(B) JACK's own command line tools not usable enough
+
+Features:
+- lists the available ports
+- displays the connections between the ports (not as nicely as QJackCtl, but
+  you can only do so much in the console...)
+- allows easy creation and destruction of connections
+- the connection setup can be saved and reloaded (like with jack_snapshot)
+
+Not featured:
+- callbacks; you will manually have to refresh to see changes
+- starting/stopping jackd -- just use the command line
+- connecting to a specific server, since I only ever used one (should be
+  easy to add, though, if needed)
+- any MIDI stuff
+
+
+License:
+none
+
+
+Contact:
+onnir@iki.fi
+
+
+Usage:
+The following commands are recognized. You can enter "h" to review them
+from inside the program.
+
+- "Q": quit esjit
+
+- "r": refresh list of connections; done automatically when the connections are
+  modified by esjit itself
+- "c N M", where N and M are numbers: connect ports numbered N and M (the
+  numbering is displayed next to the port names)
+- "d N M": disconnect ports numbered N and M
+- "D": remove all connections
+- "C <file>": store the connection setup to <file>.
+- "R <file>": recall the connection setup from file <file>.
+  This obviously only fills the connections for those ports that are present
+  both in the file and in the current setup.
+
+- "x": shows JACK server info and statistics
+- "i": print more detailed info on the ports (but not the connections)
+
+For the files, either give full path, or if not, the file is created in or
+looked for in the working directory. It is possible to manually edit the
+file, too: it is just a textfile, e.g.:
+
+#A comment line.
+output_port
+	connected_input_port
+	another_connected_input_port
+another_output_port
+#Note that the input ports start with a tab, '\t'.
+	connected_input_port
+
+This system has the same flaw as jack_snapshot, namely that if clients do
+not use the same port names always but assign them dynamically, then this
+system will likely fail to restore their connections. A partial workaround
+is to, if possible, tell the client to use a specific port name.
+
