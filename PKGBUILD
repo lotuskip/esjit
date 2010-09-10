@@ -5,9 +5,9 @@ pkgrel=1
 pkgdesc="text-mode interface for handling JACK connections"
 arch=('i686' 'x86_64')
 url="http://github.com/lotuskip/esjit"
-depends=('jack')
+depends=('jack' 'boost')
 source=(http://tempoanon.net/lotuskip/tervat/$pkgname-$pkgver.tar.gz)
-md5sums=('c7039af2d826786472409af82cd96c7d')
+md5sums=('5aca1bc597810a0b1f9ca8a21d272e3e')
 
 build() {
   mkdir -p "${pkgdir}/usr/bin" || return 1

@@ -20,6 +20,10 @@ Not featured:
   easy to add, though, if needed)
 - any MIDI stuff
 
+Dependencies:
+- JACK (obviously)
+- C++ boost
+
 
 License:
 none
