@@ -33,6 +33,10 @@ Contact:
 onnir the-at-sign iki the-dot fi
 
 
+Compile:
+g++ [-O2] -o esjit esjit.cpp -ljack
+
+
 Usage:
 The following commands are recognized. You can enter "h" to review them
 from inside the program.

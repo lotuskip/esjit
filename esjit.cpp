@@ -7,6 +7,7 @@
 #include <vector>
 #include <ctime>
 #include <cerrno>
+
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -18,6 +19,7 @@ using namespace boost;
 
 const char* VERSION = "1";
 
+// The commands part of the help view:
 const char NUM_KEYS = 9;
 const char* helps[NUM_KEYS][2] = {
 { "Q", "quit" },
@@ -27,11 +29,11 @@ const char* helps[NUM_KEYS][2] = {
 { "D", "destroy all connections" },
 { "C <f>", "store connection setup to file <f>" },
 { "R <f>", "restore connection setup from file <f>" },
-{ "x", "show server info / statistics" },
+{ "s", "show server info / statistics" },
 { "i", "print detailed port info" },
 };
 
-// colours:
+// Colour changing strings:
 const char* DEFCOL = "\033[0m";
 const char* COL = "\033[0m\033[40m\033[3";
 const char* RED = "1m";
@@ -54,6 +56,7 @@ typedef PortGraph::adjacency_iterator adj_it;
 PortGraph portgraph;
 
 
+// Get the vertex of the given jack port in the graph:
 vtex get_vtex(const jack_port_t* ref)
 {
 	for(pair<vtex_it, vtex_it> v = vertices(portgraph); v.first != v.second; ++v.first)
@@ -65,6 +68,7 @@ vtex get_vtex(const jack_port_t* ref)
 	throw 1;
 }
 
+// Get the Nth port:
 jack_port_t* port_by_index(short N)
 {
 	if(N >= num_vertices(portgraph))
@@ -75,6 +79,7 @@ jack_port_t* port_by_index(short N)
 	return portgraph[*vti];
 }
 
+// Get the 'N' for the given port:
 short index_by_port(const jack_port_t* ref)
 {
 	short n = 0;
@@ -87,6 +92,8 @@ short index_by_port(const jack_port_t* ref)
 	return -1; // not found
 }
 
+
+// Read the ports and the connections from the JACK server and construct the graph.
 void refresh_list()
 {
 	portgraph.clear();
@@ -95,17 +102,18 @@ void refresh_list()
 
 	jack_port_t *port, *port2;
 	const char **ports = jack_get_ports(client, NULL, NULL, 0);
-	// We loop the ports twice; first forming the vertices of the graph (the ports), next
-	// the edges (the connections). This ensures the ordering of the ports remains
-	// consistent throughout.
-	for(int i = 0; ports[i]; ++i)
+	// We loop the ports twice; first forming the vertices of the graph (the ports),
+	// next the edges (the connections). This ensures the ordering of the ports
+	// remains consistent throughout.
+	int i;
+	for(i = 0; ports[i]; ++i)
 	{
 		if((port = jack_port_by_name(client, ports[i])))
 			portgraph[add_vertex(portgraph)] = port;
 	}
 	const char **connections;
 	int j;
-	for(int i = 0; ports[i]; ++i)
+	for(i = 0; ports[i]; ++i)
 	{
 		if((port = jack_port_by_name(client, ports[i]))
 			&& (connections = jack_port_get_all_connections(client, port)))
@@ -118,7 +126,10 @@ void refresh_list()
 					catch(int e)
 					{
 						cerr << "Warning! Error creating port graph!" << endl;
-						return; // give up midway
+						return; /* Give up midway. Ending up here is, I think,
+						theoretically possible, if a new port is created and
+						connected to an existing port _after_ we've looped the
+						ports the first time... */
 					}
 				}
 			}
@@ -127,6 +138,9 @@ void refresh_list()
 	free(ports);
 }
 
+
+// Construct a list of port indices to which the given vertex is connected.
+// Returns either "" or something like "0,2,4,5".
 string constr_list_of_conns(const vtex vd)
 {
 	string ret = "";
@@ -138,6 +152,7 @@ string constr_list_of_conns(const vtex vd)
 	return ret;
 }
 
+// Print the connections. That's what you see first when you run esjit.
 void print_connections()
 {
 	refresh_list();
@@ -191,6 +206,7 @@ void print_connections()
 }
 
 
+// Print the detailed info on the ports.
 void print_details()
 {
 	refresh_list();
@@ -268,24 +284,24 @@ void print_details()
 }
 
 
-// Returns true if connections were changed
+// Connect or disconnect the ports with the given numbers ('disc'==true --> disconnect).
+// Returns true if connections were changed and should be reprinted.
 bool conn_disconn(const bool disc, const short N, const short M)
 {
-	jack_port_t *src_port = 0;
-	jack_port_t *dst_port = 0;
-	jack_port_t *port1 = 0;
-	jack_port_t *port2 = 0;
+	jack_port_t *src_port = 0, *dst_port = 0, *port1 = 0, *port2 = 0;
 	int port1_flags, port2_flags;
 
 	if(!(port1 = port_by_index(N)) || !(port2 = port_by_index(M)))
 	{
 		cout << "Invalid numbers!" << endl;
-		return true; // true, so that we refresh!
+		return false;
 	}
+	// else ports are valid, at least according to our (possible outdated) view.
 
+	// Determine which is input, which output. The user can give these in either
+	// order, but the jack API requires them source-first.
 	port1_flags = jack_port_flags(port1);
 	port2_flags = jack_port_flags(port2);
-
 	if(port1_flags & JackPortIsInput)
 	{
 		if(port2_flags & JackPortIsOutput)
@@ -300,13 +316,13 @@ bool conn_disconn(const bool disc, const short N, const short M)
 		dst_port = port2;
 	}
 
-	if (!src_port || !dst_port)
+	if(!src_port || !dst_port)
 	{
 		cout << "One port has to be input, the other output!" << endl;
 		return false;
 	}
 
-	if(disc)
+	if(disc) // requested to disconnect, not connect
 	{
 		if(jack_disconnect(client, jack_port_name(src_port), jack_port_name(dst_port)))
 		{
@@ -319,12 +335,13 @@ bool conn_disconn(const bool disc, const short N, const short M)
 		cout << "Connect failed!" << endl;
 		return false;
 	}
-	return true;
+	return true; // Success.
 }
 
 
 int main(int argc, char* argv[])
 {
+	// Connect to JACK server, don't start one if none is found running:
 	jack_status_t status;
     jack_options_t options = JackNoStartServer;
 	client = jack_client_open("esjit", options, &status, NULL);
@@ -349,9 +366,9 @@ int main(int argc, char* argv[])
 	{
 		cout << "> " << flush;
 		cin >> entry;
-		if(entry == "Q")
+		if(entry == "Q") // 'Q'uit
 			break;
-		if(entry == "h")
+		if(entry == "h") // 'h'elp
 		{
 			cout << "esjit version " << VERSION << endl;
 			cout << "For full info, read the README file, "
@@ -370,21 +387,21 @@ int main(int argc, char* argv[])
 			cout << endl << COL << BLUE << 'm' << DEFCOL << ": can be monitored";
 			cout << endl << COL << BLUE << 't' << DEFCOL << ": is a terminal port" << endl;
 		}
-		else if(entry == "r")
+		else if(entry == "r") // 'r'efresh
 			print_connections();
-		else if(entry == "i")
+		else if(entry == "i") // 'i'nfo
 			print_details();
-		else if(entry == "c" || entry == "d")
+		else if(entry == "c" || entry == "d") // 'c'onnect or 'd'isconnect
 		{
 			cin >> N;
 			cin >> M;
 			if(conn_disconn(entry == "d", N, M))
 				print_connections();
 		}
-		else if(entry == "D")
+		else if(entry == "D") // 'D'isconnect all
 		{
-			const char **connections;
-			const char **ports = jack_get_ports(client, NULL, NULL, 0);
+			const char **connections,
+				**ports = jack_get_ports(client, NULL, NULL, 0);
 			for(N = 0; ports[N]; ++N)
 			{
 				if((connections = jack_port_get_all_connections(client,
@@ -398,7 +415,7 @@ int main(int argc, char* argv[])
 			free(ports);
 			print_connections();
 		}
-		else if(entry == "C")
+		else if(entry == "C") // save 'C'onnection setup to file
 		{
 			cin >> entry; // filename
 			ofstream ofile(entry.c_str());
@@ -411,6 +428,8 @@ int main(int argc, char* argv[])
 				time(&rawtime);
 				timeinfo = localtime(&rawtime);
 				ofile << "#esjit generated connection setup file, " << asctime(timeinfo);
+				// Just list what ports the output ports are connected to (the connections
+				// are not directed).
   				const char **jack_oports = jack_get_ports(client, 0, 0, JackPortIsOutput);
 				for(N = 0; jack_oports[N]; ++N)
 				{
@@ -419,6 +438,7 @@ int main(int argc, char* argv[])
 					if(connections)
 					{
 						ofile << jack_oports[N] << endl;
+						// Print ports connected to this port preceded by a tab:
 						for(M = 0; connections[M]; ++M)
 							ofile << '\t' << connections[M] << endl;
 						free(connections);
@@ -429,7 +449,7 @@ int main(int argc, char* argv[])
 				cout << "Saved connection setup to \'" << entry << "\'." << endl;
 			}
 		}
-		else if(entry == "R")
+		else if(entry == "R") // 'R'etrieve connection setup from file
 		{
 			cin >> entry; // filename
 			ifstream ifile(entry.c_str());
@@ -443,7 +463,7 @@ int main(int argc, char* argv[])
 					getline(ifile, s);
 					if(s.empty() || s[0] == '#') // comments
 						continue;
-					if(s[0] != '\t')
+					if(s[0] != '\t') // tab indicates connected port
 						outname = s;
 					else // connect ports "s" and "outname"
 					{
@@ -456,7 +476,7 @@ int main(int argc, char* argv[])
 				print_connections();
 			}
 		}
-		else if(entry == "x")
+		else if(entry == "s") // 's'erver 's'tatistics
 		{
 			cout << COL << BLUE << "**JACK server info**" << DEFCOL << endl;
 			cout << "Running realtime: ";
@@ -470,7 +490,7 @@ int main(int argc, char* argv[])
 		}
 		else
 			cout << "Unknown key \'" << entry << "\'! Enter \'h\' for help." << endl;
-	}
+	} // for eva
 
 	jack_client_close(client);
 	return 0;
