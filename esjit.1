@@ -1,0 +1,54 @@
+.TH esjit
+.SH NAME
+esjit - a text mode interface for handling JACK connections
+.SH SYNOPSIS
+.B "esjit"
+.SH DESCRIPTION
+.PP
+esjit allows viewing and modifying the connections of a running JACK (jack-audio-connection-kit)
+server, as well as saving a connection setup to a file and loading it back. Basically it incorporates
+the functionality of JACK's own command line tools into one more easy-to-use application. On the
+other hand, being text-mode only, it is an extremely light-weight alternative to such popular
+interfaces as QJackCtl, if you only need the basic functionality.
+.SH OPTION
+.PP
+None.
+.SH USAGE
+.PP
+To use esjit, you must have a JACK server (jackd) running; otherwise esjit will just exit.
+Upon startup, esjit prints the found connections and a prompt. The following commands
+are recognised:
+.TP 9
+Q
+quit esjit (this does not shut down any JACK server).
+.TP
+r
+refresh the connection view. This is done automatically if you modify the connections through
+esjit, but needs to be invoked if they are changed by other clients.
+.TP
+c N M
+(where N and M are numbers; eg. 'c 1 5') connect ports N and M. The port numbers are those displayed
+by esjit in the connection listing.
+.TP
+d N M
+disconnect ports N and M.
+.TP
+D
+remove all connections; disconnect all ports.
+.TP
+C <file>
+store connection setup to file named <file> (in working directory if full path is not given).
+.TP
+R <file>
+restore connection setup from <file>. Obviously only works as far as the current port setup
+matches the port setup at the time of storing.
+.TP
+s
+show server info and statistics.
+.TP
+i
+show detailed information on the ports.
+.SH AUTHOR
+Onni R. <onnir at-sign iki dot-symbol fi>
+.SH "SEE ALSO"
+.BR jackd (1)

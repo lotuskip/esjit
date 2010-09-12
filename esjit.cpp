@@ -371,7 +371,7 @@ int main(int argc, char* argv[])
 		if(entry == "h") // 'h'elp
 		{
 			cout << "esjit version " << VERSION << endl;
-			cout << "For full info, read the README file, "
+			cout << "For full info, read the README file or the man page, "
 				"available at least at http://github.com/lotuskip/esjit" << endl;
 			cout << "Port colours: ";
 			cout << COL << GREEN << "playback" << DEFCOL << ", " << COL << RED
