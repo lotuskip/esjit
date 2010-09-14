@@ -2,7 +2,7 @@
 pkgname=esjit
 pkgver=1
 pkgrel=1
-#license=() is not missing; THERE IS NO LICENSE!
+license=('None')
 pkgdesc="a text-mode interface for handling JACK connections"
 arch=('i686' 'x86_64')
 url="http://github.com/lotuskip/esjit"
