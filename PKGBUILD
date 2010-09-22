@@ -1,6 +1,6 @@
 # Maintainer: Onni R. <onnir at iki dot fi>
 pkgname=esjit
-pkgver=1
+pkgver=2
 pkgrel=1
 license=('None')
 pkgdesc="a text-mode interface for handling JACK connections"

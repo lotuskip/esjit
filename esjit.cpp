@@ -17,10 +17,10 @@
 using namespace std;
 using namespace boost;
 
-const char* VERSION = "1";
+const char* VERSION = "2";
 
 // The commands part of the help view:
-const char NUM_KEYS = 9;
+const char NUM_KEYS = 10;
 const char* helps[NUM_KEYS][2] = {
 { "Q", "quit" },
 { "r", "refresh connections" },
@@ -31,7 +31,10 @@ const char* helps[NUM_KEYS][2] = {
 { "R <f>", "restore connection setup from file <f>" },
 { "s", "show server info / statistics" },
 { "i", "print detailed port info" },
+{ "x", "reset the max delay counter" }
 };
+
+const char* info_str[5] = { "Port ID & name ", "aliases ", "ltncy/tot ", "flgs ", "type" };
 
 // Colour changing strings:
 const char* DEFCOL = "\033[0m";
@@ -133,9 +136,10 @@ void refresh_list()
 					}
 				}
 			}
+			jack_free(connections);
 		}
 	}
-	free(ports);
+	jack_free(ports);
 }
 
 
@@ -214,12 +218,7 @@ void print_details()
 	// Collect what to print:
 	vector<bool> redstart;
 	vector<string> columns[5];
-	columns[0].push_back("Port ID & name ");
-	columns[1].push_back("aliases ");
-	columns[2].push_back("ltncy/tot ");
-	columns[3].push_back("flgs ");
-	columns[4].push_back("type");
-	short longests[4] = { 15, 8, 10, 5 }; // lengths of the above
+	short longests[4] = { 15, 8, 10, 5 }; // lengths of the info_str strings
 	int flags;
 	char ch;
 	short cnt;
@@ -268,13 +267,13 @@ void print_details()
 	}
 
 	// Print it nicely:
-	for(ch = 0; ch < 4; ++ch)
-		cout << setw(longests[ch]) << columns[ch][0];
-	cout << columns[4][0] << endl;
-	for(n = 1; n < columns[0].size(); ++n)
+	for(n = 0; n < 4; ++n)
+		cout << setw(longests[n]) << info_str[n];
+	cout << info_str[4] << endl;
+	for(n = 0; n < columns[0].size(); ++n)
 	{
 		cout << COL;
-		if(redstart[n-1]) cout << RED;
+		if(redstart[n]) cout << RED;
 		else cout << GREEN;
 		cout << setw(longests[0]) << columns[0][n] << DEFCOL;
 		for(ch = 1; ch < 4; ++ch)
@@ -288,38 +287,32 @@ void print_details()
 // Returns true if connections were changed and should be reprinted.
 bool conn_disconn(const bool disc, const short N, const short M)
 {
-	jack_port_t *src_port = 0, *dst_port = 0, *port1 = 0, *port2 = 0;
+	jack_port_t *src_port = 0, *dst_port = 0;
 	int port1_flags, port2_flags;
 
-	if(!(port1 = port_by_index(N)) || !(port2 = port_by_index(M)))
+	if(!(src_port = port_by_index(N)) || !(dst_port = port_by_index(M)))
 	{
 		cout << "Invalid numbers!" << endl;
 		return false;
 	}
 	// else ports are valid, at least according to our (possible outdated) view.
 
-	// Determine which is input, which output. The user can give these in either
-	// order, but the jack API requires them source-first.
-	port1_flags = jack_port_flags(port1);
-	port2_flags = jack_port_flags(port2);
-	if(port1_flags & JackPortIsInput)
-	{
-		if(port2_flags & JackPortIsOutput)
-		{
-			src_port = port2;
-			dst_port = port1;
-		}
-	}
-	else if(port2_flags & JackPortIsInput)
-	{
-		src_port = port1;
-		dst_port = port2;
-	}
-
-	if(!src_port || !dst_port)
+	port1_flags = jack_port_flags(src_port);
+	port2_flags = jack_port_flags(dst_port);
+	// Check if both are in or put:
+	if((port1_flags & port2_flags) & (JackPortIsInput | JackPortIsOutput))
 	{
 		cout << "One port has to be input, the other output!" << endl;
 		return false;
+	}
+	// Determine which is input, which output. The user can give these in either
+	// order, but the jack API requires them source-first.
+	if(port1_flags & JackPortIsInput) // implies port2 is output
+	{
+		// need to switch:
+		jack_port_t *tmp_port = src_port;
+		src_port = dst_port;
+		dst_port = tmp_port;
 	}
 
 	if(disc) // requested to disconnect, not connect
@@ -365,7 +358,8 @@ int main(int argc, char* argv[])
 	for(;;)
 	{
 		cout << "> " << flush;
-		cin >> entry;
+		if(!(cin >> entry))
+			break;
 		if(entry == "Q") // 'Q'uit
 			break;
 		if(entry == "h") // 'h'elp
@@ -409,10 +403,10 @@ int main(int argc, char* argv[])
 				{
 					for(M = 0; connections[M]; ++M)
 						jack_disconnect(client, ports[N], connections[M]);
-					free(connections);
+					jack_free(connections);
 				}
 			}
-			free(ports);
+			jack_free(ports);
 			print_connections();
 		}
 		else if(entry == "C") // save 'C'onnection setup to file
@@ -441,11 +435,11 @@ int main(int argc, char* argv[])
 						// Print ports connected to this port preceded by a tab:
 						for(M = 0; connections[M]; ++M)
 							ofile << '\t' << connections[M] << endl;
-						free(connections);
+						jack_free(connections);
 					}
       			}
 				ofile.close();
-				free(jack_oports);
+				jack_free(jack_oports);
 				cout << "Saved connection setup to \'" << entry << "\'." << endl;
 			}
 		}
@@ -487,6 +481,11 @@ int main(int argc, char* argv[])
 			cout << DEFCOL << endl << "CPU load: " << COL << CYAN << jack_cpu_load(client);
 			cout << DEFCOL << endl << "Max delay: " << COL << CYAN << jack_get_max_delayed_usecs(client) << " microseconds";
 			cout << DEFCOL << endl;
+		}
+		else if(entry == "x") // reset ma'x' delay
+		{
+			jack_reset_max_delayed_usecs(client);
+			cout << "Max delay counter reset." << endl;
 		}
 		else
 			cout << "Unknown key \'" << entry << "\'! Enter \'h\' for help." << endl;
