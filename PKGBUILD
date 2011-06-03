@@ -9,7 +9,7 @@ url="http://github.com/lotuskip/esjit"
 makedepends=('boost')
 depends=('jack' 'boost-libs')
 source=(http://tempoanon.net/lotuskip/tervat/$pkgname-$pkgver.tar.gz)
-md5sums=('84f71967b568e8bb7ca112c52bfed55b')
+md5sums=('401519367607eb1c80126f18b118d80a')
 
 build() {
   mkdir -p "${pkgdir}/usr/bin" || return 1
