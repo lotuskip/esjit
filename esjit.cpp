@@ -34,17 +34,16 @@ const char* helps[NUM_KEYS][2] = {
 { "x", "reset the max delay counter" }
 };
 
-const char* info_str[5] = { "Port ID & name ", "aliases ", "ltncy/tot ", "flgs ", "type" };
+const char* info_str[5] = { "Port ID & name ", "aliases ", "ltncy-rng ", "flgs ", "type" };
 
 // Colour changing strings:
-const char* DEFCOL = "\033[0m";
-const char* COL = "\033[0m\033[40m\033[3";
-const char* RED = "1m";
-const char* GREEN = "2m";
-const char* BLUE = "4m";
-const char* MAG = "5m";
-const char* CYAN = "6m";
-
+const char DEFCOL[] = "\033[0m";
+const char COL[] = "\033[0m\033[40m\033[3";
+const char RED[] = "1m";
+const char GREEN[] = "2m";
+const char BLUE[] = "4m";
+const char MAG[] = "5m";
+const char CYAN[] = "6m";
 
 jack_client_t *client;
 char* aliases[2];
@@ -223,6 +222,7 @@ void print_details()
 	char ch;
 	short cnt;
 	short n = 0;
+	jack_latency_range_t range;
 	for(pair<vtex_it,vtex_it> v = vertices(portgraph); v.first != v.second; ++v.first)
 	{
 		flags = jack_port_flags(portgraph[*v.first]);
@@ -245,8 +245,11 @@ void print_details()
 		}
 		else columns[1].push_back("--");
 
-		columns[2].push_back(lexical_cast<string>(jack_port_get_latency(portgraph[*v.first]))
-			+ '/' + lexical_cast<string>(jack_port_get_total_latency(client, portgraph[*v.first])));
+		jack_port_get_latency_range(portgraph[*v.first],
+			(flags & JackPortIsInput) ? JackCaptureLatency : JackPlaybackLatency,
+			&range);
+		columns[2].push_back(lexical_cast<string>(range.min)
+			+ '-' + lexical_cast<string>(range.max));
 
 		columns[3].push_back("");
 		if(flags & JackPortCanMonitor)
