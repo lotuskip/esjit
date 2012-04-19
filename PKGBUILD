@@ -9,12 +9,12 @@ url="http://github.com/lotuskip/esjit"
 makedepends=('boost')
 depends=('jack' 'boost-libs')
 source=(http://tempoanon.net/lotuskip/tervat/$pkgname-$pkgver.tar.gz)
-md5sums=('401519367607eb1c80126f18b118d80a')
+md5sums=('873038057ffe096610e5472deb170723')
 
 build() {
-  mkdir -p "${pkgdir}/usr/bin" || return 1
+  mkdir -p "${pkgdir}/usr/bin"
   cd $srcdir
-  g++ -O2 -o $pkgdir/usr/bin/esjit esjit.cpp -ljack || return 1
+  g++ -O2 -o $pkgdir/usr/bin/esjit esjit.cpp -ljack
   install -Dm644 esjit.1 $pkgdir/usr/share/man/man1/esjit.1
 }
 

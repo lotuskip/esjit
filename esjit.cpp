@@ -17,7 +17,7 @@
 using namespace std;
 using namespace boost;
 
-const char* VERSION = "2";
+const char* VERSION = "3";
 
 // The commands part of the help view:
 const char NUM_KEYS = 10;
@@ -81,7 +81,7 @@ jack_port_t* port_by_index(short N)
 	return portgraph[*vti];
 }
 
-// Get the 'N' for the given port:
+// Get 'N' for the given port:
 short index_by_port(const jack_port_t* ref)
 {
 	short n = 0;
@@ -337,10 +337,23 @@ bool conn_disconn(const bool disc, const short N, const short M)
 
 int main(int argc, char* argv[])
 {
-	// Connect to JACK server, don't start one if none is found running:
+	// Connect to JACK server [cmdline argument, if any, giving the name];
+	// don't start one if none is found running:
 	jack_status_t status;
     jack_options_t options = JackNoStartServer;
-	client = jack_client_open("esjit", options, &status, NULL);
+	if(argc > 1)
+	{
+		if(string(argv[1]) == "-h" || string(argv[1]) == "-v")
+		{
+			cout << "esjit version " << VERSION << endl
+				<< "Usage: " << argv[0] << " [server name, optional]" << endl;
+			return 0;
+		}
+		// Else argv[1] is server name?
+		client = jack_client_open("esjit", options, &status, argv[1]);
+	}
+	else
+		client = jack_client_open("esjit", options, &status, NULL);
 	if(!client)
 	{
 		if(status & JackServerFailed)
@@ -380,7 +393,8 @@ int main(int argc, char* argv[])
 					<< DEFCOL << helps[N][1] << endl;
 			}
 			cout << "In the detailed view, the following abbreviations are used for port flags:";
-			cout << endl << COL << BLUE << 'P' << DEFCOL << ": corresponds to a physical I/O connector";
+			cout << endl << COL << BLUE << 'P'
+				<< DEFCOL << ": corresponds to a physical I/O connector";
 			cout << endl << COL << BLUE << 'm' << DEFCOL << ": can be monitored";
 			cout << endl << COL << BLUE << 't' << DEFCOL << ": is a terminal port" << endl;
 		}
@@ -467,7 +481,8 @@ int main(int argc, char* argv[])
 						s.erase(0,1); // remove the tab
 						N = jack_connect(client, outname.c_str(), s.c_str());
 						if(N && N != EEXIST) // "connection already exists" is not an error here
-							cout << "Could not connect \'" << s << "\' to \'" << outname << "\'." << endl;
+							cout << "Could not connect \'" << s
+								<< "\' to \'" << outname << "\'." << endl;
 					}
 				}
 				print_connections();
@@ -479,11 +494,15 @@ int main(int argc, char* argv[])
 			cout << "Running realtime: ";
 			if(jack_is_realtime(client)) cout << COL << BLUE << "yes";
 			else cout << COL << MAG << "no";
-			cout << DEFCOL << endl << "Samplerate: " << COL << CYAN << jack_get_sample_rate(client) << " Hz";
-			cout << DEFCOL << endl << "Buffer size: " << COL << CYAN << jack_get_buffer_size(client) << " b";
-			cout << DEFCOL << endl << "CPU load: " << COL << CYAN << jack_cpu_load(client);
-			cout << DEFCOL << endl << "Max delay: " << COL << CYAN << jack_get_max_delayed_usecs(client) << " microseconds";
-			cout << DEFCOL << endl;
+			cout << DEFCOL << endl << "Samplerate: "
+				<< COL << CYAN << jack_get_sample_rate(client) << " Hz";
+			cout << DEFCOL << endl << "Buffer size: "
+				<< COL << CYAN << jack_get_buffer_size(client) << " b";
+			cout << DEFCOL << endl << "CPU load: "
+				<< COL << CYAN << jack_cpu_load(client);
+			cout << DEFCOL << endl << "Max delay: "
+				<< COL << CYAN << jack_get_max_delayed_usecs(client)
+				<< " microseconds" << DEFCOL << endl;
 		}
 		else if(entry == "x") // reset ma'x' delay
 		{

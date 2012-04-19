@@ -16,8 +16,6 @@ Features:
 Not featured:
 - callbacks; you will have to refresh manually to see external changes
 - starting/stopping jackd -- just use the command line
-- connecting to a specific server, since I only ever used one (should be
-  easy to add, though, if needed)
 - any MIDI stuff
 
 Dependencies:
