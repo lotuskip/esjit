@@ -8,7 +8,7 @@ arch=('i686' 'x86_64')
 url="http://github.com/lotuskip/esjit"
 makedepends=('boost')
 depends=('jack' 'boost-libs')
-source=(http://tempoanon.net/lotuskip/tervat/$pkgname-$pkgver.tar.gz)
+source=(http://github.com/downloads/lotuskip/esjit/$pkgname-$pkgver.tar.gz)
 md5sums=('873038057ffe096610e5472deb170723')
 
 build() {
