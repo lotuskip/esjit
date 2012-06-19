@@ -71,7 +71,7 @@ vtex get_vtex(const jack_port_t* ref)
 }
 
 // Get the Nth port:
-jack_port_t* port_by_index(short N)
+jack_port_t* port_by_index(unsigned short N)
 {
 	if(N >= num_vertices(portgraph))
 		return NULL;
@@ -99,7 +99,6 @@ short index_by_port(const jack_port_t* ref)
 void refresh_list()
 {
 	portgraph.clear();
-	vtex vd1, vd2;
 	vtex_it vti;
 
 	jack_port_t *port, *port2;
@@ -161,12 +160,12 @@ void print_connections()
 	refresh_list();
 
 	vector<string> columns[3];
-	short longests[2] = { 0, 0 };
+	unsigned short longests[2] = { 0, 0 };
 	
 	// Collect what to print:
 	char ch;
 	int flags;
-	short n = 0;
+	unsigned short n = 0;
 	string tmpstr;
 	for(pair<vtex_it,vtex_it> v = vertices(portgraph); v.first != v.second; ++v.first)
 	{
@@ -217,11 +216,11 @@ void print_details()
 	// Collect what to print:
 	vector<bool> redstart;
 	vector<string> columns[5];
-	short longests[4] = { 15, 8, 10, 5 }; // lengths of the info_str strings
+	unsigned short longests[4] = { 15, 8, 10, 5 }; // lengths of the info_str strings
 	int flags;
 	char ch;
 	short cnt;
-	short n = 0;
+	unsigned short n = 0;
 	jack_latency_range_t range;
 	for(pair<vtex_it,vtex_it> v = vertices(portgraph); v.first != v.second; ++v.first)
 	{
